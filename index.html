@@ -140,7 +140,7 @@ if(savedSb.url)document.getElementById('sbUrl').value=savedSb.url;
 if(savedSb.key)document.getElementById('sbKey').value=savedSb.key;
 function initSb(){const url=document.getElementById('sbUrl').value.trim(),key=document.getElementById('sbKey').value.trim();if(!url||!key){document.getElementById('authStatus').textContent='未登入';return false}sb=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true}});return true}
 async function refreshAuth(){if(!sb&&!initSb())return;const {data:{session}}=await sb.auth.getSession();if(!session){currentProfile=null;document.getElementById('authStatus').textContent='未登入';applyRoleUI();return}const {data:p,error}=await sb.from('profiles').select('role,center').eq('user_id',session.user.id).single();if(error){document.getElementById('authStatus').textContent='登入成功，但尚未配置角色';return}currentProfile=p;applyRoleUI()}
-localStorage.setItem('dekpi_supabase_config',JSON.stringify(cfg));initSb();await refreshAuth();alert('Supabase 連線設定已儲存在此瀏覽器。')};
+
 document.getElementById('loginBtn').onclick=async()=>{if(!sb&&!initSb())return alert('請先填 Supabase URL 與 anon key');const email=document.getElementById('loginEmail').value.trim(),password=document.getElementById('loginPassword').value;const {error}=await sb.auth.signInWithPassword({email,password});if(error)return alert('登入失敗：'+error.message);await refreshAuth();await loadSupabaseData();alert('登入成功')};
 document.getElementById('logoutBtn').onclick=async()=>{if(sb)await sb.auth.signOut();currentProfile=null;document.getElementById('authStatus').textContent='未登入';applyRoleUI()};
 setTimeout(async()=>{initSb();await refreshAuth();if(currentProfile)await loadSupabaseData()},0);
