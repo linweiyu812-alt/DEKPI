@@ -1,10 +1,21 @@
 <!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>外送中心 KPI 管理</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<style>:root{--bg:#f5f6f8;--card:#fff;--line:#ddd;--text:#222;--muted:#6b7280;--accent:#111;--red:#d71920;--good:#18794e}*{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans TC",sans-serif;background:var(--bg);color:var(--text)}header{padding:18px 24px;background:#fff;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}h1{font-size:22px;margin:0}.hint{color:var(--muted);font-size:13px}.status{font-size:13px;padding:7px 10px;border-radius:8px;background:#f0f1f3}main{padding:18px;max-width:1500px;margin:auto}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.tab,.btn{border:1px solid var(--line);background:#fff;padding:9px 13px;border-radius:8px;cursor:pointer}.tab.active,.primary{background:#111;color:#fff}.danger{background:#fff;color:#b91c1c;border-color:#b91c1c}.page{display:none}.page.active{display:block}.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}.toolbar{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:12px;color:var(--muted)}input,select{padding:8px;border:1px solid #ccc;border-radius:7px;background:#fff}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}.kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}.kpi small{color:var(--muted)}.kpi b{display:block;font-size:24px;margin-top:5px}.scroll{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:8px 10px;border-bottom:1px solid #e5e7eb;white-space:nowrap;text-align:right}th{background:#f8f8f8;position:sticky;top:0}th:first-child,td:first-child{text-align:left}.chartwrap{height:520px}.checks{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}.target-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.target-box{border:1px solid var(--line);padding:14px;border-radius:10px}.target-box h3{font-size:14px;margin:0 0 8px}.subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.subtab.active{background:#111;color:#fff}.ok{color:var(--good)}.warn{color:#b45309}.section-title{font-size:17px;margin:0 0 10px}@media(max-width:900px){.grid,.target-grid{grid-template-columns:1fr 1fr}.chartwrap{height:420px}}@media(max-width:600px){.grid,.target-grid{grid-template-columns:1fr}}</style></head><body>
-<header><div><h1>外送中心 KPI 管理</h1><div class="hint">BI 月報匯入｜DMS D25｜GES／人力｜2 年封存｜BSC 分類匯出</div></div><div style="display:flex;gap:8px;align-items:center"><div id="authStatus" class="status">尚未連線 Supabase</div><div id="dbStatus" class="status"></div></div></header><main>
-<div class="card" id="securityCard">
-<h2 class="section-title">安全登入</h2>
-<p class="hint">正式資料改由 Supabase Auth + RLS 控制：OP 可看全市場；六中心帳號只能讀取自己的中心。此 HTML 不再內嵌 KFC 歷史 KPI。</p>
+<style>:root{--bg:#f5f6f8;--card:#fff;--line:#ddd;--text:#222;--muted:#6b7280;--accent:#111;--red:#d71920;--good:#18794e}*{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans TC",sans-serif;background:var(--bg);color:var(--text)}header{padding:18px 24px;background:#fff;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}h1{font-size:22px;margin:0}.hint{color:var(--muted);font-size:13px}.status{font-size:13px;padding:7px 10px;border-radius:8px;background:#f0f1f3}main{padding:18px;max-width:1500px;margin:auto}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.tab,.btn{border:1px solid var(--line);background:#fff;padding:9px 13px;border-radius:8px;cursor:pointer}.tab.active,.primary{background:#111;color:#fff}.danger{background:#fff;color:#b91c1c;border-color:#b91c1c}.page{display:none}.page.active{display:block}.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}.toolbar{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:12px;color:var(--muted)}input,select{padding:8px;border:1px solid #ccc;border-radius:7px;background:#fff}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}.kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}.kpi small{color:var(--muted)}.kpi b{display:block;font-size:24px;margin-top:5px}.scroll{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:8px 10px;border-bottom:1px solid #e5e7eb;white-space:nowrap;text-align:right}th{background:#f8f8f8;position:sticky;top:0}th:first-child,td:first-child{text-align:left}.chartwrap{height:520px}.checks{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}.target-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.target-box{border:1px solid var(--line);padding:14px;border-radius:10px}.target-box h3{font-size:14px;margin:0 0 8px}.subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.subtab.active{background:#111;color:#fff}.ok{color:var(--good)}.warn{color:#b45309}.section-title{font-size:17px;margin:0 0 10px}@media(max-width:900px){.grid,.target-grid{grid-template-columns:1fr 1fr}.chartwrap{height:420px}}@media(max-width:600px){.grid,.target-grid{grid-template-columns:1fr}}</style>
+<style>
+.login-shell{min-height:68vh;display:flex;align-items:center;justify-content:center;padding:32px}
+.login-card{width:min(520px,92vw);background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:32px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+.login-title{font-size:26px;margin:0 0 8px}.login-sub{color:#6b7280;margin:0 0 22px}
+#securityCard .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:end}
+#securityCard .toolbar button{height:44px}
+#securityCard #logoutBtn{display:none}
+#authStatus{font-weight:600}
+@media(max-width:650px){#securityCard .toolbar{grid-template-columns:1fr}.login-card{padding:22px}}
+</style>
+</head><body>
+<header><div><h1>外送中心 KPI 管理</h1><div class="hint">BI 月報匯入｜DMS D25｜GES／人力｜2 年封存｜BSC 分類匯出</div></div><div style="display:flex;gap:8px;align-items:center"><div id="authStatus" class="status">未登入</div><div id="dbStatus" class="status"></div></div></header><main>
+<div class="login-shell" id="securityCard"><div class="login-card">
+<h2 class="login-title">外送中心 KPI 管理</h2>
+<p class="login-sub">請使用中心帳號登入</p>
 <div class="toolbar">
 <input id="sbUrl" type="hidden" value="https://lkokyshixsnpgaymvacs.supabase.co">
 <input id="sbKey" type="hidden" value="sb_publishable_AI9TSuB34k2V-FhwR2Mp1A_2x7tVgSR">
@@ -12,9 +23,8 @@
 <div class="field"><label>Email</label><input id="loginEmail" type="email"></div>
 <div class="field"><label>Password</label><input id="loginPassword" type="password"></div>
 <button id="loginBtn" class="btn primary">登入</button><button id="logoutBtn" class="btn">登出</button>
-</div></div>
-
-<div class="card" id="migrationCard">
+</div></div></div>
+<div id="appShell" style="display:none"><div class="card" id="migrationCard" style="display:none">
 <h2 class="section-title">資料移轉（OP）</h2>
 <p class="hint">只有 OP 使用。先在舊版/本機載入歷史資料，再按「將目前瀏覽器 KPI 上傳 Supabase」。網站程式本身不內嵌 KFC 歷史數據。</p>
 <div class="toolbar"><button id="migrateLocalBtn" class="btn primary">將目前瀏覽器 KPI 上傳 Supabase</button><span id="migrateMsg" class="hint"></span></div>
@@ -27,7 +37,7 @@
 <section id="supplement" class="page"><div class="card"><h2 class="section-title">每月補充資料</h2><div class="toolbar"><div class="field"><label>年月</label><select id="suppMonth"></select></div></div><p class="hint">DMS D25% 為手動輸入；BI D25% 不在此修改。GES、人力資料也在這裡補充。</p><div class="scroll"><table id="suppTable"></table></div><button id="saveSupp" class="btn primary" style="margin-top:12px">儲存補充資料</button></div></section>
 <section id="targets" class="page"><div class="card"><div class="toolbar"><div class="field"><label>年度</label><select id="targetYear"></select></div><button id="saveTargets" class="btn primary">儲存 KPI 目標</button></div></div><div id="targetBoxes" class="target-grid"></div><p class="hint">只要此處有填目標，該 KPI 趨勢圖就會自動出現紅色 Target 線。年度分開保存。</p></section>
 <section id="export" class="page"><div class="card"><div class="toolbar"><div class="field"><label>匯出月份</label><select id="exportMonth"></select></div><button id="copyBtn" class="btn primary">複製目前表格</button><button id="exportBtn" class="btn primary">匯出 BSC Excel</button><button id="archiveBtn" class="btn">匯出 2 年封存檔</button><button id="deleteOldBtn" class="btn danger">刪除已封存舊資料</button></div><div class="subtabs" id="exportTabs"></div><p class="hint">BSC 匯出依分類分頁，不把所有欄位混在同一張表。完整封存檔則保留所有資料。</p></div><div class="card"><div class="scroll"><table id="exportTable"></table></div></div></section>
-</main><script>
+</div></main><script>
 const CENTERS=['台北','新北','桃園','台中','台南','高雄'];const centerMap={'台北外送中心':'台北','新北外送中心':'新北','桃園外送中心':'桃園','台中外送中心':'台中','台南外送中心':'台南','高雄外送中心':'高雄'};
 const SEED={rows:[],totals:[]};
 const METRICS={tplh:['OWN TPLH','num'],third:['第三方使用率','pct'],d25:['BI D25%','pct'],dmsD25:['DMS D25%','pct'],d7:['D7%','pct'],qt:['QT','min'],sssg:['SSSG%','pct'],sstg:['SSTG%','pct'],deliveryTC:['外送 TC','int'],deliverySales:['外送 Sales','money'],gesOsat:['GES OSAT','pct'],gesSos:['GES SOS','pct'],gesAccuracy:['GES 餐點正確性','pct'],gesTaste:['GES 餐點好吃度','pct'],staffRate:['人員配置達成率','pct'],staffRateAdj:['人員配置達成率（扣低工時）','pct']};
@@ -95,6 +105,32 @@ async function saveTargetsToSupabase(year){
   if(rows.length){const {error}=await sb.from('kpi_targets').upsert(rows,{onConflict:'year,metric'});if(error)throw error}
 }
 
+
+function applyRoleUI(){
+  const logged=!!currentProfile;
+  document.getElementById('securityCard').style.display=logged?'none':'flex';
+  document.getElementById('appShell').style.display=logged?'block':'none';
+  if(!logged)return;
+
+  const isOp=currentProfile.role==='op';
+  // OP-only tabs and migration.
+  ['import','supplement','targets'].forEach(page=>{
+    const b=document.querySelector(`.tab[data-page="${page}"]`);
+    if(b)b.style.display=isOp?'':'none';
+  });
+  const mig=document.getElementById('migrationCard');
+  if(mig)mig.style.display=isOp?'block':'none';
+
+  // Center users only see Dashboard / Trend / Export.
+  if(!isOp){
+    const active=document.querySelector('.tab.active');
+    if(active && ['import','supplement','targets'].includes(active.dataset.page)){
+      document.querySelector('.tab[data-page="dashboard"]')?.click();
+    }
+  }
+  document.getElementById('authStatus').textContent=isOp?'OP｜全市場':`${currentProfile.center}中心`;
+}
+
 // ===== Supabase secure mode =====
 // The anon key is allowed in a browser. Never place a service_role key in GitHub/HTML/JS.
 let sb=null,currentProfile=null;
@@ -102,11 +138,11 @@ const DEFAULT_SB={url:'https://lkokyshixsnpgaymvacs.supabase.co',key:'sb_publish
 const savedSb=Object.assign({},DEFAULT_SB,JSON.parse(localStorage.getItem('dekpi_supabase_config')||'{}'));
 if(savedSb.url)document.getElementById('sbUrl').value=savedSb.url;
 if(savedSb.key)document.getElementById('sbKey').value=savedSb.key;
-function initSb(){const url=document.getElementById('sbUrl').value.trim(),key=document.getElementById('sbKey').value.trim();if(!url||!key){document.getElementById('authStatus').textContent='尚未設定 Supabase';return false}sb=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true}});return true}
-async function refreshAuth(){if(!sb&&!initSb())return;const {data:{session}}=await sb.auth.getSession();if(!session){currentProfile=null;document.getElementById('authStatus').textContent='未登入';return}const {data:p,error}=await sb.from('profiles').select('role,center').eq('user_id',session.user.id).single();if(error){document.getElementById('authStatus').textContent='登入成功，但尚未配置角色';return}currentProfile=p;document.getElementById('authStatus').textContent=p.role==='op'?'OP｜全市場':`${p.center}中心`}
+function initSb(){const url=document.getElementById('sbUrl').value.trim(),key=document.getElementById('sbKey').value.trim();if(!url||!key){document.getElementById('authStatus').textContent='未登入';return false}sb=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true}});return true}
+async function refreshAuth(){if(!sb&&!initSb())return;const {data:{session}}=await sb.auth.getSession();if(!session){currentProfile=null;document.getElementById('authStatus').textContent='未登入';applyRoleUI();return}const {data:p,error}=await sb.from('profiles').select('role,center').eq('user_id',session.user.id).single();if(error){document.getElementById('authStatus').textContent='登入成功，但尚未配置角色';return}currentProfile=p;applyRoleUI()}
 localStorage.setItem('dekpi_supabase_config',JSON.stringify(cfg));initSb();await refreshAuth();alert('Supabase 連線設定已儲存在此瀏覽器。')};
 document.getElementById('loginBtn').onclick=async()=>{if(!sb&&!initSb())return alert('請先填 Supabase URL 與 anon key');const email=document.getElementById('loginEmail').value.trim(),password=document.getElementById('loginPassword').value;const {error}=await sb.auth.signInWithPassword({email,password});if(error)return alert('登入失敗：'+error.message);await refreshAuth();await loadSupabaseData();alert('登入成功')};
-document.getElementById('logoutBtn').onclick=async()=>{if(sb)await sb.auth.signOut();currentProfile=null;document.getElementById('authStatus').textContent='未登入'};
+document.getElementById('logoutBtn').onclick=async()=>{if(sb)await sb.auth.signOut();currentProfile=null;document.getElementById('authStatus').textContent='未登入';applyRoleUI()};
 setTimeout(async()=>{initSb();await refreshAuth();if(currentProfile)await loadSupabaseData()},0);
 
 
