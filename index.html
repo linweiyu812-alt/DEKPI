@@ -108,6 +108,7 @@ async function saveTargetsToSupabase(year){
 
 function applyRoleUI(){
   const logged=!!currentProfile;
+  const dbs=document.getElementById('dbStatus'); if(dbs)dbs.style.display=logged?'':'none';
   document.getElementById('securityCard').style.display=logged?'none':'flex';
   document.getElementById('appShell').style.display=logged?'block':'none';
   if(!logged)return;
@@ -139,7 +140,7 @@ const savedSb=Object.assign({},DEFAULT_SB,JSON.parse(localStorage.getItem('dekpi
 if(savedSb.url)document.getElementById('sbUrl').value=savedSb.url;
 if(savedSb.key)document.getElementById('sbKey').value=savedSb.key;
 function initSb(){const url=document.getElementById('sbUrl').value.trim(),key=document.getElementById('sbKey').value.trim();if(!url||!key){document.getElementById('authStatus').textContent='未登入';return false}sb=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true}});return true}
-async function refreshAuth(){if(!sb&&!initSb())return;const {data:{session}}=await sb.auth.getSession();if(!session){currentProfile=null;document.getElementById('authStatus').textContent='未登入';applyRoleUI();return}const {data:p,error}=await sb.from('profiles').select('role,center').eq('user_id',session.user.id).single();if(error){document.getElementById('authStatus').textContent='登入成功，但尚未配置角色';return}currentProfile=p;applyRoleUI()}
+async function refreshAuth(){if(!sb&&!initSb())return;const {data:{session}}=await sb.auth.getSession();if(!session){currentProfile=null;document.getElementById('authStatus').textContent='未登入';applyRoleUI();return}const {data:p,error}=await sb.rpc('get_my_profile');if(error||!p||!p.length){currentProfile=null;document.getElementById('authStatus').textContent='登入成功，但無法讀取角色';applyRoleUI();return}currentProfile=p[0];applyRoleUI()}
 
 document.getElementById('loginBtn').onclick=async()=>{if(!sb&&!initSb())return alert('請先填 Supabase URL 與 anon key');const email=document.getElementById('loginEmail').value.trim(),password=document.getElementById('loginPassword').value;const {error}=await sb.auth.signInWithPassword({email,password});if(error)return alert('登入失敗：'+error.message);await refreshAuth();await loadSupabaseData();alert('登入成功')};
 document.getElementById('logoutBtn').onclick=async()=>{if(sb)await sb.auth.signOut();currentProfile=null;document.getElementById('authStatus').textContent='未登入';applyRoleUI()};
