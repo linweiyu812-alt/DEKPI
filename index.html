@@ -10,6 +10,9 @@
 .edit-old{font-size:22px;font-weight:700;padding:10px 0}
 .audit-table td,.audit-table th{font-size:12px}
 @media(max-width:900px){.edit-grid{grid-template-columns:1fr 1fr}}
+
+.py-cell{background:#f3f4f6;font-weight:600}
+textarea[readonly]{background:#f3f4f6;color:#555}
 </style>
 <style>
 .login-shell{min-height:68vh;display:flex;align-items:center;justify-content:center;padding:32px}
@@ -34,7 +37,10 @@
 <div class="field"><label>Password</label><input id="loginPassword" type="password"></div>
 <button id="loginBtn" class="btn primary">登入</button><button id="logoutBtn" class="btn">登出</button>
 </div></div></div>
-<div id="appShell" style="display:none"><div class="tabs"><button class="tab active" data-page="dashboard">KPI Dashboard</button><button class="tab" data-page="import">BI 匯入</button><button class="tab" data-page="trend">月趨勢</button><button class="tab" data-page="supplement">補充資料</button><button class="tab" data-page="targets">KPI 目標設定</button><button class="tab" data-page="export">匯出表格</button><button class="tab op-only" data-page="editdata">資料修正</button><button class="tab op-only" data-page="admin">系統管理</button></div>
+<div id="appShell" style="display:none"><div class="tabs"><button class="tab active" data-page="dashboard">KPI Dashboard</button>
+<button data-page="weeklylog">週誌</button>
+<button data-page="monthlyreport">月報</button>
+<button data-page="recruitment">招募追蹤</button><button class="tab" data-page="import">BI 匯入</button><button class="tab" data-page="trend">月趨勢</button><button class="tab" data-page="supplement">補充資料</button><button class="tab" data-page="targets">KPI 目標設定</button><button class="tab" data-page="export">匯出表格</button><button class="tab op-only" data-page="editdata">資料修正</button><button class="tab op-only" data-page="admin">系統管理</button></div>
 <section id="dashboard" class="page active"><div class="card"><div class="toolbar"><div class="field"><label>查看月份</label><select id="dashMonth"></select></div></div></div><div id="kpiCards" class="grid"></div><div class="card"><h2 class="section-title" id="dashTitle">六中心 KPI</h2><div class="scroll"><table id="dashTable"></table></div></div>
 <div class="card"><h2 class="section-title">BI 原始欄位完整明細</h2><p class="hint">依 BI 原始欄位完整顯示；僅將「不含FA」改為「含新開店」顯示名稱。OP 可看到 BI Total，中心帳號只看到自己的中心。表格可左右捲動。</p><div class="scroll"><table id="biRawTable"></table></div></div></section>
 <section id="import" class="page"><div class="card"><h2 class="section-title">匯入 BI 月報</h2><div class="toolbar"><div class="field"><label>資料年月</label><input id="importMonth" type="month"></div><div class="field"><label>BI Excel</label><input id="biFile" type="file" accept=".xlsx,.xls"></div><button id="importBtn" class="btn primary">匯入並儲存</button></div><p class="hint">BI D25% 維持由 BI 匯入；DMS D25% 在「補充資料」手動輸入。全市場卡片優先讀 BI Total，不直接平均六中心百分比。</p><div id="importMsg" class="status">等待匯入</div></div><div class="card"><h2 class="section-title">目前留存月份</h2><div id="monthList" class="hint"></div></div></section>
@@ -60,6 +66,172 @@
   <div class="card">
     <h2 class="section-title">最近修改紀錄</h2>
     <div class="scroll"><table id="editAuditTable" class="audit-table"></table></div>
+  </div>
+</section>
+
+
+
+<section id="weeklylog" class="page">
+  <div class="card">
+    <h2 class="section-title">週誌｜當週 KPI 與事件紀錄</h2>
+    <div class="toolbar">
+      <label>週次 <input type="week" id="weeklyLogWeek"></label>
+      <label>中心 <select id="weeklyLogCenter"></select></label>
+      <button class="btn primary" type="button">儲存草稿</button>
+      <button class="btn" type="button">提交週誌</button>
+    </div>
+    <p class="hint">填寫本週時，同頁顯示去年同週 KPI 與去年當時的週誌紀錄。週誌只記錄 KPI、當週發生事項與影響，不要求填寫 Action。</p>
+  </div>
+
+  <div class="card">
+    <h3>今年本週 vs 去年同週</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>KPI</th><th>去年同週</th><th>上週</th><th>本週</th><th>目標</th><th>本週說明</th></tr></thead>
+      <tbody>
+        <tr><td>外送 Sales</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input placeholder="本週數字變化說明"></td></tr>
+        <tr><td>外送 TC</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input placeholder="本週數字變化說明"></td></tr>
+        <tr><td>SSSG%</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>SSTG%</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>第三方使用率</td><td class="py-cell">—</td><td>—</td><td>—</td><td>≤25%</td><td><input></td></tr>
+        <tr><td>OWN TPLH</td><td class="py-cell">—</td><td>—</td><td>—</td><td>2.00</td><td><input></td></tr>
+        <tr><td>D7%</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>D25%</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>GES OSAT</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>GES SOS</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="background:#fafbfc">
+    <h3>去年同週紀錄｜唯讀參考</h3>
+    <div class="hint">去年同週：系統依選擇週次自動對照；若沒有資料顯示「去年同期無紀錄」。</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>日期</th><th>分類</th><th>去年發生事項／說明</th><th>當時影響</th></tr></thead>
+      <tbody><tr><td>—</td><td>—</td><td>去年同期無紀錄</td><td>—</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>本週事項紀錄</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>日期</th><th>分類</th><th>發生事項／說明</th><th>對 KPI／營運影響</th></tr></thead>
+      <tbody>
+        <tr><td><input type="date"></td><td><select><option>營運</option><option>人力</option><option>系統</option><option>天氣</option><option>促銷</option><option>事故</option><option>其他</option></select></td><td><input placeholder="本週發生什麼事"></td><td><input placeholder="造成什麼影響"></td></tr>
+        <tr><td><input type="date"></td><td><select><option>營運</option><option>人力</option><option>系統</option><option>天氣</option><option>促銷</option><option>事故</option><option>其他</option></select></td><td><input></td><td><input></td></tr>
+      </tbody>
+    </table></div>
+    <p class="hint">此版先確認畫面與欄位；尚未寫入 Supabase。</p>
+  </div>
+</section>
+
+
+<section id="monthlyreport" class="page">
+  <div class="card">
+    <h2 class="section-title">月報｜EOM Review</h2>
+    <div class="toolbar">
+      <label>月份 <input type="month" id="monthlyReportMonth"></label>
+      <label>中心 <select id="monthlyReportCenter"></select></label>
+      <button class="btn primary" type="button">儲存草稿</button>
+      <button class="btn" type="button">提交月報</button>
+    </div>
+    <p class="hint">選擇月份後，同頁顯示去年同月份 KPI 與去年月報紀錄。去年內容為唯讀參考。</p>
+  </div>
+
+  <div class="card">
+    <h3>業績／Delivery KPI</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>KPI</th><th>去年同月</th><th>本月</th><th>差異</th><th>目標</th><th>今年說明</th></tr></thead>
+      <tbody>
+        <tr><td>外送 Sales</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>外送 TC</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>SSSG%</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>SSTG%</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>TA</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>第三方使用率</td><td class="py-cell">—</td><td>—</td><td>—</td><td>≤25%</td><td><input></td></tr>
+        <tr><td>OWN TPLH</td><td class="py-cell">—</td><td>—</td><td>—</td><td>2.00</td><td><input></td></tr>
+        <tr><td>D7%</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>DMS D25%</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>QT</td><td class="py-cell">—</td><td>—</td><td>—</td><td>—</td><td><input></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>GES／Customer</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>KPI</th><th>去年同月</th><th>本月</th><th>差異</th><th>今年說明</th></tr></thead>
+      <tbody>
+        <tr><td>OSAT</td><td class="py-cell">—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>SOS</td><td class="py-cell">—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>餐點正確性</td><td class="py-cell">—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>餐點好吃度</td><td class="py-cell">—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>080／4128</td><td class="py-cell">—</td><td>—</td><td>—</td><td><input></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>人力／Manpower</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>項目</th><th>去年同月</th><th>本月</th><th>差異</th><th>今年說明</th></tr></thead>
+      <tbody>
+        <tr><td>目標人數</td><td class="py-cell">—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>實際人數</td><td class="py-cell">—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>低工時人數</td><td class="py-cell">—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>有效人力</td><td class="py-cell">—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>配置達成率（不扣低工時）</td><td class="py-cell">—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>配置達成率（扣低工時）</td><td class="py-cell">—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>新進</td><td class="py-cell">—</td><td>—</td><td>—</td><td><input></td></tr>
+        <tr><td>離職</td><td class="py-cell">—</td><td>—</td><td>—</td><td><input></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="card" style="background:#fafbfc">
+    <h3>去年同月 EOM 紀錄｜唯讀參考</h3>
+    <div class="form-grid">
+      <label>去年主要 Finding<textarea rows="3" readonly placeholder="去年同期無紀錄"></textarea></label>
+      <label>去年根源分析<textarea rows="3" readonly placeholder="去年同期無紀錄"></textarea></label>
+      <label>去年 Action／計畫<textarea rows="3" readonly placeholder="去年同期無紀錄"></textarea></label>
+      <label>去年人力說明<textarea rows="3" readonly placeholder="去年同期無紀錄"></textarea></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>本月 EOM 填寫</h3>
+    <div class="form-grid">
+      <label>本月主要 Finding<textarea rows="4" placeholder="本月主要營運發現"></textarea></label>
+      <label>根源分析<textarea rows="4" placeholder="造成 KPI 變化的主要原因"></textarea></label>
+      <label>Action／計畫<textarea rows="4" placeholder="改善行動與後續計畫"></textarea></label>
+      <label>人力說明／招募重點<textarea rows="4" placeholder="人力缺口、異動與招募狀況"></textarea></label>
+    </div>
+    <p class="hint">此版先確認畫面與欄位；尚未寫入 Supabase。</p>
+  </div>
+</section>
+
+<section id="recruitment" class="page">
+  <div class="card">
+    <h2 class="section-title">招募追蹤</h2>
+    <p class="hint">追蹤各中心人力缺口、招募進度與報到狀況。</p>
+    <div class="toolbar">
+      <label>月份 <input type="month"></label>
+      <label>中心 <select id="recruitCenter"></select></label>
+      <button class="btn primary" type="button">儲存更新</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="table-wrap"><table>
+      <thead><tr><th>目標人數</th><th>實際人數</th><th>低工時</th><th>有效人力</th><th>人力缺口</th><th>履歷</th><th>已面試</th><th>錄取</th><th>待報到</th><th>本月新進</th><th>本月離職</th></tr></thead>
+      <tbody><tr><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><input type="number" min="0"></td><td><input type="number" min="0"></td><td><input type="number" min="0"></td><td><input type="number" min="0"></td><td>—</td><td>—</td></tr></tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <h3>招募進度紀錄</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>更新日期</th><th>招募狀況</th><th>目前問題</th><th>預計進度</th><th>備註</th></tr></thead>
+      <tbody><tr><td><input type="date"></td><td><input placeholder="目前招募進度"></td><td><input placeholder="招募困難／原因"></td><td><input placeholder="下一階段進度"></td><td><input></td></tr></tbody>
+    </table></div>
+    <p class="hint">目前先開放版面預覽；尚未寫入 Supabase。</p>
   </div>
 </section>
 
@@ -128,6 +300,20 @@ function displayRaw(v){
   if(v==null||v==='')return '—';
   if(typeof v==='number')return Number.isInteger(v)?v.toLocaleString():v.toLocaleString(undefined,{maximumFractionDigits:4});
   return String(v);
+}
+
+function fmtBiRawValue(key,v){
+  if(v===null||v===undefined||v==='') return '—';
+  const n=Number(v);
+  if(!Number.isFinite(n)) return v;
+  const k=String(key||'').toLowerCase();
+  const isPct = k.includes('%') || k.includes('達成率');
+  if(isPct){
+    const p=Math.abs(n)<=1.5?n*100:n;
+    return p.toFixed(2)+'%';
+  }
+  if(key==='TA' || key==='TA_PY') return Math.round(n).toLocaleString('zh-TW');
+  return n.toLocaleString('zh-TW',{maximumFractionDigits:2});
 }
 function renderBiRawTable(){
   const el=document.getElementById('biRawTable'); if(!el)return;
@@ -472,4 +658,14 @@ async function safeImportHistoricalKPI(){
 document.getElementById('safeHistoryImportBtn')?.addEventListener('click',safeImportHistoricalKPI);
 </script>
 
+<script>
+function fillPreviewCenters(){
+  ['weeklyLogCenter','monthlyReportCenter','recruitCenter'].forEach(id=>{
+    const el=document.getElementById(id); if(!el)return;
+    const allowed=(currentProfile&&currentProfile.role==='center'&&currentProfile.center)?[currentProfile.center]:CENTERS;
+    el.innerHTML=allowed.map(c=>`<option>${c}</option>`).join('');
+  });
+}
+document.querySelectorAll('button[data-page="weeklylog"],button[data-page="monthlyreport"],button[data-page="recruitment"]').forEach(b=>b.addEventListener('click',fillPreviewCenters));
+</script>
 </body></html>
