@@ -12,7 +12,7 @@
 @media(max-width:650px){#securityCard .toolbar{grid-template-columns:1fr}.login-card{padding:22px}}
 </style>
 </head><body>
-<header><div><h1>外送中心 KPI 管理</h1><div class="hint">BI 月報匯入｜DMS D25｜GES／人力｜2 年封存｜BSC 分類匯出</div></div><div style="display:flex;gap:8px;align-items:center"><div id="authStatus" class="status">未登入</div><div id="dbStatus" class="status"></div></div></header><main>
+<header><div><h1>外送中心 KPI 管理</h1><div class="hint">BI 月報匯入｜DMS D25｜GES／人力｜2 年封存｜BSC 分類匯出</div></div><div style="display:flex;gap:8px;align-items:center"><div id="authStatus" class="status">未登入</div><div id="dbStatus" class="status"></div><button id="topLogoutBtn" class="btn" style="display:none">登出</button></div></header><main>
 <div class="login-shell" id="securityCard"><div class="login-card">
 <h2 class="login-title">外送中心 KPI 管理</h2>
 <p class="login-sub">請使用中心帳號登入</p>
@@ -24,19 +24,26 @@
 <div class="field"><label>Password</label><input id="loginPassword" type="password"></div>
 <button id="loginBtn" class="btn primary">登入</button><button id="logoutBtn" class="btn">登出</button>
 </div></div></div>
-<div id="appShell" style="display:none"><div class="card" id="migrationCard" style="display:none">
-<h2 class="section-title">資料移轉（OP）</h2>
-<p class="hint">只有 OP 使用。先在舊版/本機載入歷史資料，再按「將目前瀏覽器 KPI 上傳 Supabase」。網站程式本身不內嵌 KFC 歷史數據。</p>
-<div class="toolbar"><button id="migrateLocalBtn" class="btn primary">將目前瀏覽器 KPI 上傳 Supabase</button><span id="migrateMsg" class="hint"></span></div>
-</div>
-
-<div class="tabs"><button class="tab active" data-page="dashboard">KPI Dashboard</button><button class="tab" data-page="import">BI 匯入</button><button class="tab" data-page="trend">月趨勢</button><button class="tab" data-page="supplement">補充資料</button><button class="tab" data-page="targets">KPI 目標設定</button><button class="tab" data-page="export">匯出表格</button></div>
+<div id="appShell" style="display:none"><div class="tabs"><button class="tab active" data-page="dashboard">KPI Dashboard</button><button class="tab" data-page="import">BI 匯入</button><button class="tab" data-page="trend">月趨勢</button><button class="tab" data-page="supplement">補充資料</button><button class="tab" data-page="targets">KPI 目標設定</button><button class="tab" data-page="export">匯出表格</button><button class="tab op-only" data-page="admin">系統管理</button></div>
 <section id="dashboard" class="page active"><div class="card"><div class="toolbar"><div class="field"><label>查看月份</label><select id="dashMonth"></select></div></div></div><div id="kpiCards" class="grid"></div><div class="card"><h2 class="section-title">六中心 KPI</h2><div class="scroll"><table id="dashTable"></table></div></div></section>
 <section id="import" class="page"><div class="card"><h2 class="section-title">匯入 BI 月報</h2><div class="toolbar"><div class="field"><label>資料年月</label><input id="importMonth" type="month"></div><div class="field"><label>BI Excel</label><input id="biFile" type="file" accept=".xlsx,.xls"></div><button id="importBtn" class="btn primary">匯入並儲存</button></div><p class="hint">BI D25% 維持由 BI 匯入；DMS D25% 在「補充資料」手動輸入。全市場卡片優先讀 BI Total，不直接平均六中心百分比。</p><div id="importMsg" class="status">等待匯入</div></div><div class="card"><h2 class="section-title">目前留存月份</h2><div id="monthList" class="hint"></div></div></section>
 <section id="trend" class="page"><div class="card"><div class="toolbar"><div class="field"><label>KPI</label><select id="trendMetric"></select></div><div class="field"><label>年度</label><select id="trendYear"></select></div><label><input type="checkbox" id="showPY"> 顯示去年同期</label></div><div class="checks" id="centerChecks"></div></div><div class="card"><div class="chartwrap"><canvas id="trendChart"></canvas></div><p class="hint">有設定 Target 的 KPI 會顯示紅色目標線與紅框 Target 標示；沒有 Target 的 KPI 不顯示目標線。</p></div></section>
 <section id="supplement" class="page"><div class="card"><h2 class="section-title">每月補充資料</h2><div class="toolbar"><div class="field"><label>年月</label><select id="suppMonth"></select></div></div><p class="hint">DMS D25% 為手動輸入；BI D25% 不在此修改。GES、人力資料也在這裡補充。</p><div class="scroll"><table id="suppTable"></table></div><button id="saveSupp" class="btn primary" style="margin-top:12px">儲存補充資料</button></div></section>
 <section id="targets" class="page"><div class="card"><div class="toolbar"><div class="field"><label>年度</label><select id="targetYear"></select></div><button id="saveTargets" class="btn primary">儲存 KPI 目標</button></div></div><div id="targetBoxes" class="target-grid"></div><p class="hint">只要此處有填目標，該 KPI 趨勢圖就會自動出現紅色 Target 線。年度分開保存。</p></section>
 <section id="export" class="page"><div class="card"><div class="toolbar"><div class="field"><label>匯出月份</label><select id="exportMonth"></select></div><button id="copyBtn" class="btn primary">複製目前表格</button><button id="exportBtn" class="btn primary">匯出 BSC Excel</button><button id="archiveBtn" class="btn">匯出 2 年封存檔</button><button id="deleteOldBtn" class="btn danger">刪除已封存舊資料</button></div><div class="subtabs" id="exportTabs"></div><p class="hint">BSC 匯出依分類分頁，不把所有欄位混在同一張表。完整封存檔則保留所有資料。</p></div><div class="card"><div class="scroll"><table id="exportTable"></table></div></div></section>
+
+<section id="admin" class="page">
+  <div class="card">
+    <h2 class="section-title">系統管理</h2>
+    <p class="hint">僅 OP 可使用。資料不會自動刪除；建議先匯出封存後再清除。</p>
+    <div class="toolbar">
+      <div class="field"><label>清除月份</label><select id="deleteMonth"></select></div>
+      <button id="archiveMonthBtn" class="btn">先匯出該月 Excel</button>
+      <button id="deleteMonthBtn" class="btn" style="border-color:#b91c1c;color:#b91c1c">清除該月資料</button>
+    </div>
+    <div id="deleteMsg" class="hint"></div>
+  </div>
+</section>
 </div></main><script>
 const CENTERS=['台北','新北','桃園','台中','台南','高雄'];const centerMap={'台北外送中心':'台北','新北外送中心':'新北','桃園外送中心':'桃園','台中外送中心':'台中','台南外送中心':'台南','高雄外送中心':'高雄'};
 const SEED={rows:[],totals:[]};
@@ -84,13 +91,13 @@ async function loadSupabaseData(){
     if(x.center==='Total')remoteTotals.push(r); else remoteRows.push(r);
   }
   // In secure mode, Supabase is the authoritative source after login.
-  db=remoteRows; totals=remoteTotals;
+  db=remoteRows; totals=remoteTotals; localStorage.removeItem('kfc_kpi_db'); localStorage.removeItem('kfc_kpi_totals');
   const {data:t,error:te}=await sb.from('kpi_targets').select('year,metric,target');
   if(!te){
     targets={};
     for(const x of (t||[])){if(!targets[x.year])targets[x.year]={};targets[x.year][x.metric]=Number(x.target)}
   }
-  refreshAll();
+  refreshAll(); syncFormalMonthSelectors();
 }
 async function upsertMonthlyRow(r){
   if(!sb||!currentProfile)throw new Error('請先登入');
@@ -108,24 +115,22 @@ async function saveTargetsToSupabase(year){
 
 function applyRoleUI(){
   const logged=!!currentProfile;
-  const dbs=document.getElementById('dbStatus'); if(dbs)dbs.style.display=logged?'':'none';
+  const dbs=document.getElementById('dbStatus'); if(dbs)dbs.style.display=logged?'':'none'; const tl=document.getElementById('topLogoutBtn'); if(tl)tl.style.display=logged?'':'none';
   document.getElementById('securityCard').style.display=logged?'none':'flex';
   document.getElementById('appShell').style.display=logged?'block':'none';
   if(!logged)return;
 
   const isOp=currentProfile.role==='op';
   // OP-only tabs and migration.
-  ['import','supplement','targets'].forEach(page=>{
+  ['import','supplement','targets','admin'].forEach(page=>{
     const b=document.querySelector(`.tab[data-page="${page}"]`);
     if(b)b.style.display=isOp?'':'none';
   });
-  const mig=document.getElementById('migrationCard');
-  if(mig)mig.style.display=isOp?'block':'none';
 
   // Center users only see Dashboard / Trend / Export.
   if(!isOp){
     const active=document.querySelector('.tab.active');
-    if(active && ['import','supplement','targets'].includes(active.dataset.page)){
+    if(active && ['import','supplement','targets','admin'].includes(active.dataset.page)){
       document.querySelector('.tab[data-page="dashboard"]')?.click();
     }
   }
@@ -147,19 +152,59 @@ document.getElementById('logoutBtn').onclick=async()=>{if(sb)await sb.auth.signO
 setTimeout(async()=>{initSb();await refreshAuth();if(currentProfile)await loadSupabaseData()},0);
 
 
-document.getElementById('migrateLocalBtn').onclick=async()=>{
-  if(!currentProfile||currentProfile.role!=='op')return alert('只有 OP 可以執行資料移轉');
-  const localRows=JSON.parse(localStorage.getItem('kfc_kpi_db')||'[]');
-  const localTotals=JSON.parse(localStorage.getItem('kfc_kpi_totals')||'[]');
-  if(!localRows.length&&!localTotals.length)return alert('此瀏覽器目前沒有舊版 KPI 資料可移轉。');
-  if(!confirm(`準備上傳 ${localRows.length} 筆中心資料、${localTotals.length} 筆 Total。確定繼續？`))return;
-  const msg=document.getElementById('migrateMsg'); msg.textContent='上傳中…';
-  try{
-    let n=0;
-    for(const r of [...localRows,...localTotals]){await upsertMonthlyRow(r);n++;msg.textContent=`已上傳 ${n}/${localRows.length+localTotals.length}`}
-    msg.textContent=`完成，共 ${n} 筆。`;
-    await loadSupabaseData();
-  }catch(e){msg.textContent='失敗：'+e.message}
+
+
+
+function allowedRowsForMonth(month){
+  const isOp=currentProfile?.role==='op';
+  const rows=db.filter(r=>r.month===month && (isOp || r.center===currentProfile?.center));
+  const total=isOp ? totals.filter(r=>r.month===month) : [];
+  return [...rows,...total];
+}
+function syncFormalMonthSelectors(){
+  const months=[...new Set([...db,...totals].map(r=>r.month).filter(Boolean))].sort().reverse();
+  const del=document.getElementById('deleteMonth');
+  if(del)del.innerHTML=months.map(m=>`<option value="${m}">${m}</option>`).join('');
+}
+function exportFormalMonth(month){
+  if(!month)return alert('請先選擇月份');
+  const rows=allowedRowsForMonth(month);
+  if(!rows.length)return alert('此月份沒有可匯出的資料');
+  const flat=rows.map(r=>({
+    月份:r.month,中心:r.center,
+    外送Sales:r.deliverySales??'',外送SalesPY:r.deliverySalesPY??'',
+    SSSG:r.sssg??'',SSTG:r.sstg??'',外送TC:r.deliveryTC??'',
+    第三方使用率:r.third??'',OWN_TC:r.ownTC??'',OWN_TPLH:r.tplh??'',
+    D7:r.d7??'',BI_D25:r.d25??'',DMS_D25:r.dmsD25??'',QT:r.qt??'',
+    GES_OSAT:r.gesOsat??'',GES_SOS:r.gesSos??'',
+    目標人數:r.targetHeadcount??'',實際人數:r.actualHeadcount??'',低工時人數:r.lowHours??''
+  }));
+  const ws=XLSX.utils.json_to_sheet(flat), wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'當月KPI');
+  XLSX.writeFile(wb,`DEKPI_${month}_${currentProfile?.role==='op'?'全市場':currentProfile?.center}.xlsx`);
+}
+document.getElementById('topLogoutBtn').onclick=async()=>{
+  if(sb)await sb.auth.signOut();
+  currentProfile=null; db=[]; totals=[]; targets={};
+  document.getElementById('authStatus').textContent='未登入';
+  applyRoleUI(); refreshAll();
+};
+document.getElementById('archiveMonthBtn').onclick=()=>exportFormalMonth(document.getElementById('deleteMonth').value);
+document.getElementById('deleteMonthBtn').onclick=async()=>{
+  if(currentProfile?.role!=='op')return alert('只有 OP 可以清除資料');
+  const month=document.getElementById('deleteMonth').value;
+  if(!month)return alert('請先選擇月份');
+  const first=confirm(`即將清除 ${month} 的全市場 KPI 資料。\n建議先匯出封存。\n\n確定繼續？`);
+  if(!first)return;
+  const typed=prompt(`第二次確認：請輸入 ${month} 才會刪除`);
+  if(typed!==month)return alert('月份輸入不一致，已取消刪除');
+  const start=month+'-01';
+  const d=new Date(start+'T00:00:00'); d.setMonth(d.getMonth()+1);
+  const end=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+  const {error}=await sb.from('monthly_kpi').delete().gte('month',start).lt('month',end);
+  if(error)return alert('清除失敗：'+error.message);
+  document.getElementById('deleteMsg').textContent=`${month} 已清除。`;
+  await loadSupabaseData(); syncFormalMonthSelectors();
 };
 
 </script></body></html>
