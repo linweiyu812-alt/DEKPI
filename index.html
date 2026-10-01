@@ -668,4 +668,25 @@ function fillPreviewCenters(){
 }
 document.querySelectorAll('button[data-page="weeklylog"],button[data-page="monthlyreport"],button[data-page="recruitment"]').forEach(b=>b.addEventListener('click',fillPreviewCenters));
 </script>
+
+<script>
+(function(){
+  const previewPages = new Set(['weeklylog','monthlyreport','recruitment']);
+  document.querySelectorAll('button[data-page]').forEach(btn=>{
+    const target=btn.getAttribute('data-page');
+    if(!previewPages.has(target)) return;
+    btn.addEventListener('click', function(ev){
+      ev.preventDefault();
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      const page=document.getElementById(target);
+      if(page) page.classList.add('active');
+      document.querySelectorAll('button[data-page]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      if(typeof fillPreviewCenters==='function') fillPreviewCenters();
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+  });
+})();
+</script>
+
 </body></html>
