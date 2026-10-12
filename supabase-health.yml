@@ -1,0 +1,40 @@
+name: Supabase daily health check
+
+on:
+  schedule:
+    # 02:17 UTC = 10:17 Taiwan time (UTC+8)
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check Supabase REST endpoint
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$SUPABASE_URL" || -z "$SUPABASE_ANON_KEY" ]]; then
+            echo 'Missing SUPABASE_URL or SUPABASE_ANON_KEY repository secrets.' >&2
+            exit 1
+          fi
+          # A REST API request with an invalid table name exercises the API
+          # without reading or changing user data. A 404 indicates a live API.
+          status=$(curl --silent --show-error --max-time 25 --output /tmp/supabase-response.txt --write-out '%{http_code}' \
+            --get "${SUPABASE_URL%/}/rest/v1/__github_health_check_nonexistent__" \
+            --data-urlencode 'select=*' \
+            --header "apikey: ${SUPABASE_ANON_KEY}" \
+            --header "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+          if [[ "$status" == "404" ]]; then
+            echo 'Supabase REST API responded (404 for deliberately nonexistent table).'
+          else
+            echo "Unexpected Supabase REST API status: $status" >&2
+            head -c 300 /tmp/supabase-response.txt >&2
+            exit 1
+          fi
