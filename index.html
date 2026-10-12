@@ -365,7 +365,7 @@ function renderDashboard(){
   document.getElementById('kpiCards').innerHTML=defs.map(([l,k,t])=>`<div class="kpi"><small>${l}</small><b>${f(isOp?totalVal(m,k):one?.[k],t)}</b></div>`).join('');
   let cols=[['中心','center',''],['外送 Sales（含新開店）','deliverySales','money'],['外送 Sales PY（含新開店）','deliverySalesPY','money'],['SSSG%','sssg','pct'],['SSTG%','sstg','pct'],['外送TC','deliveryTC','int'],['3RD%','third','pct'],['OWN TC','ownTC','int'],['OWN TPLH','tplh','num'],['D7','d7','pct'],['BI D25','d25','pct'],['DMS D25','dmsD25','pct'],['QT','qt','min'],['GES OSAT','gesOsat','pct'],['GES SOS','gesSos','pct'],['目標人數','targetHeadcount','int'],['實際人數','actualHeadcount','int'],['低工時','lowHourHeadcount','int'],['配置率','staffRate','pct'],['扣低工時配置率','staffRateAdj','pct']];
   let body=scope.map(c=>{let r=rowFor(m,c)||{};return '<tr>'+cols.map(x=>`<td>${x[1]==='center'?c:f(r[x[1]],x[2])}</td>`).join('')+'</tr>'}).join('');
-  if(isOp&&totalFor(m)){let r=totalFor(m);body+='<tr class="total-row">'+cols.map(x=>`<td>${x[1]==='center'?'Total':f(r[x[1]],x[2])}</td>`).join('')+'</tr>'}
+  if(isOp&&totalFor(m)){let r=computedSupplementTotal(m);body+='<tr class="total-row">'+cols.map(x=>`<td>${x[1]==='center'?'Total':f(r[x[1]],x[2])}</td>`).join('')+'</tr>'}
   document.getElementById('dashTable').innerHTML='<tr>'+cols.map(x=>`<th>${x[0]}</th>`).join('')+'</tr>'+body;
   renderBiRawTable();
 }
@@ -411,8 +411,36 @@ document.getElementById('importBtn').onclick=async()=>{
     document.getElementById('importMsg').innerHTML=`<span class="ok">匯入完成並寫入 Supabase：${m}，${got.length} 個中心${total?'＋ BI Total':'；未找到 Total'}。BI 原始欄位已完整保存。</span>`;
   }catch(e){document.getElementById('importMsg').textContent='匯入失敗：'+e.message}
 }
-function renderSupp(){let m=document.getElementById('suppMonth').value;if(!m)return;let cols=[['DMS D25%','dmsD25','pctin'],['目標人數','targetHeadcount','number'],['實際人數','actualHeadcount','number'],['低工時人數','lowHourHeadcount','number'],['新進','newHire','number'],['離職','resign','number'],['GES OSAT','gesOsat','pctin'],['GES SOS','gesSos','pctin'],['餐點正確性','gesAccuracy','pctin'],['餐點好吃度','gesTaste','pctin'],['GES份數','gesResponses','number'],['備註','note','text']];document.getElementById('suppTable').innerHTML='<tr><th>中心</th><th>BI D25%</th>'+cols.map(x=>`<th>${x[0]}</th>`).join('')+'<th>配置率</th><th>扣低工時配置率</th></tr>'+CENTERS.map(c=>{let r=rowFor(m,c)||{};return `<tr><td>${c}</td><td>${f(r.d25,'pct')}</td>`+cols.map(([l,k,t])=>`<td><input style="width:${t==='text'?'180':'85'}px" data-c="${c}" data-k="${k}" data-t="${t}" type="${t==='text'?'text':'number'}" step="0.01" value="${t==='pctin'&&r[k]!=null?r[k]*100:r[k]??''}"></td>`).join('')+`<td>${f(r.staffRate,'pct')}</td><td>${f(r.staffRateAdj,'pct')}</td></tr>`}).join('')}
-document.getElementById('saveSupp').onclick=async()=>{if(currentProfile?.role!=='op')return;let m=document.getElementById('suppMonth').value;document.querySelectorAll('#suppTable input').forEach(i=>{let r=rowFor(m,i.dataset.c);if(!r){r={month:m,center:i.dataset.c};db.push(r)}let v=i.value.trim();r[i.dataset.k]=v===''?null:i.dataset.t==='text'?v:i.dataset.t==='pctin'?+v/100:+v;calc(r)});for(const r of db.filter(x=>x.month===m))await upsertMonthlyRow(r);save();alert('補充資料已儲存到 Supabase')}
+const TOTAL_MANUAL_KEYS=['dmsD25','gesOsat','gesSos','gesAccuracy','gesTaste'];
+const TOTAL_SUM_KEYS=['targetHeadcount','actualHeadcount','lowHourHeadcount','newHire','resign','gesResponses'];
+function computedSupplementTotal(m){
+ const t={...(totalFor(m)||{}),month:m,center:'Total'};
+ for(const k of TOTAL_SUM_KEYS){const rows=CENTERS.map(c=>rowFor(m,c));t[k]=rows.some(r=>r&&r[k]!=null&&r[k]!=='')?rows.reduce((n,r)=>n+(Number(r?.[k])||0),0):null;}
+ calc(t);return t;
+}
+function renderSupp(){
+ let m=document.getElementById('suppMonth').value;if(!m)return;
+ let cols=[['DMS D25%','dmsD25','pctin'],['目標人數','targetHeadcount','number'],['實際人數','actualHeadcount','number'],['低工時人數','lowHourHeadcount','number'],['新進','newHire','number'],['離職','resign','number'],['GES OSAT','gesOsat','pctin'],['GES SOS','gesSos','pctin'],['餐點正確性','gesAccuracy','pctin'],['餐點好吃度','gesTaste','pctin'],['GES份數','gesResponses','number'],['備註','note','text']];
+ const makeInput=(c,k,t,r)=>{const v=t==='pctin'&&r[k]!=null?r[k]*100:r[k]??'';return `<input style="width:${t==='text'?'180':'85'}px" data-c="${c}" data-k="${k}" data-t="${t}" type="${t==='text'?'text':'number'}" step="0.01" value="${String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}">`};
+ const centers=CENTERS.map(c=>{let r=rowFor(m,c)||{};return `<tr><td>${c}</td><td>${f(r.d25,'pct')}</td>`+cols.map(([l,k,t])=>`<td>${makeInput(c,k,t,r)}</td>`).join('')+`<td>${f(r.staffRate,'pct')}</td><td>${f(r.staffRateAdj,'pct')}</td></tr>`}).join('');
+ const t=computedSupplementTotal(m);
+ const total=`<tr class="total-row" style="background:#eef1f5;font-weight:700"><td>TOTAL（全市場）</td><td>${f(t.d25,'pct')}</td>`+cols.map(([l,k,typ])=>`<td>${TOTAL_MANUAL_KEYS.includes(k)?makeInput('Total',k,typ,t):k==='note'?'—':f(t[k],typ==='number'?'int':typ==='pctin'?'pct':'')}</td>`).join('')+`<td>${f(t.staffRate,'pct')}</td><td>${f(t.staffRateAdj,'pct')}</td></tr>`;
+ document.getElementById('suppTable').innerHTML='<tr><th>中心</th><th>BI D25%</th>'+cols.map(x=>`<th>${x[0]}</th>`).join('')+'<th>配置率</th><th>扣低工時配置率</th></tr>'+centers+total;
+}
+document.getElementById('saveSupp').onclick=async()=>{
+ if(currentProfile?.role!=='op')return;
+ let m=document.getElementById('suppMonth').value;
+ document.querySelectorAll('#suppTable input').forEach(i=>{
+  const isTotal=i.dataset.c==='Total';let r=isTotal?totalFor(m):rowFor(m,i.dataset.c);
+  if(!r){r={month:m,center:i.dataset.c};if(isTotal)totals.push(r);else db.push(r)}
+  let v=i.value.trim();r[i.dataset.k]=v===''?null:i.dataset.t==='text'?v:i.dataset.t==='pctin'?+v/100:+v;
+  if(!isTotal)calc(r);
+ });
+ let t=totalFor(m);if(!t){t={month:m,center:'Total'};totals.push(t)}
+ Object.assign(t,computedSupplementTotal(m));
+ try{for(const r of db.filter(x=>x.month===m))await upsertMonthlyRow(r);await upsertMonthlyRow(t);save();alert('六中心與 TOTAL 補充資料已儲存到 Supabase')}
+ catch(e){alert('儲存失敗：'+e.message)}
+};
 const targetDefs=[['tplh','OWN TPLH','≥','2.00','num'],['third','第三方使用率','≤','25','pct'],['d25','BI D25%','≥','80','pct'],['dmsD25','DMS D25%','≥','80','pct'],['d7','D7%','≥','','pct'],['qt','QT','≤','','min'],['gesOsat','GES OSAT','≥','','pct'],['gesSos','GES SOS','≥','','pct'],['gesAccuracy','GES 餐點正確性','≥','','pct'],['gesTaste','GES 餐點好吃度','≥','','pct'],['staffRate','人員配置達成率','≥','100','pct'],['staffRateAdj','扣低工時配置率','≥','100','pct']];
 function renderTargets(){let y=document.getElementById('targetYear').value;if(!y)return;targets[y]=targets[y]||{};document.getElementById('targetBoxes').innerHTML=targetDefs.map(([k,l,op,ph,t])=>`<div class="target-box"><h3>${l} <span class="hint">${op}</span></h3><div class="field"><label>${t==='pct'?'百分比 (%)':t==='min'?'分鐘':'數值'}</label><input data-target="${k}" type="number" step="0.01" placeholder="${ph}" value="${targets[y][k]??''}"></div></div>`).join('')}
 document.getElementById('saveTargets').onclick=async()=>{let y=document.getElementById('targetYear').value;targets[y]=targets[y]||{};document.querySelectorAll('[data-target]').forEach(i=>{if(i.value==='')delete targets[y][i.dataset.target];else targets[y][i.dataset.target]=+i.value});await saveTargetsToSupabase(y);save();alert('KPI 目標已儲存到 Supabase')}
