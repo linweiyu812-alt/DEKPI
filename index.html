@@ -259,7 +259,8 @@ textarea[readonly]{background:#f3f4f6;color:#555}
 const CENTERS=['台北','新北','桃園','台中','台南','高雄'];const centerMap={'台北外送中心':'台北','新北外送中心':'新北','桃園外送中心':'桃園','台中外送中心':'台中','台南外送中心':'台南','高雄外送中心':'高雄'};
 const SEED={rows:[],totals:[]};
 const METRICS={tplh:['OWN TPLH','num'],third:['第三方使用率','pct'],d25:['BI D25%','pct'],dmsD25:['DMS D25%','pct'],d7:['D7%','pct'],qt:['QT','min'],sssg:['SSSG%','pct'],sstg:['SSTG%','pct'],deliveryTC:['外送 TC','int'],deliverySales:['外送 Sales（含新開店）','money'],gesOsat:['GES OSAT','pct'],gesSos:['GES SOS','pct'],gesAccuracy:['GES 餐點正確性','pct'],gesTaste:['GES 餐點好吃度','pct'],staffRate:['人員配置達成率','pct'],staffRateAdj:['人員配置達成率（扣低工時）','pct']};
-let db=JSON.parse(localStorage.getItem('kfc_kpi_db')||'[]'),totals=JSON.parse(localStorage.getItem('kfc_kpi_totals')||'[]'),targets=JSON.parse(localStorage.getItem('kfc_kpi_targets')||'{}'),chart,lastArchiveAt=localStorage.getItem('kfc_kpi_last_archive')||'';
+function safeStoredJSON(key,fallback){try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback))}catch(e){console.warn('Invalid cached data:',key,e);return fallback}}
+let db=safeStoredJSON('kfc_kpi_db',[]),totals=safeStoredJSON('kfc_kpi_totals',[]),targets=safeStoredJSON('kfc_kpi_targets',{}),chart,lastArchiveAt=localStorage.getItem('kfc_kpi_last_archive')||'';
 function calc(r){if(!r)return r;r.staffRate=(r.targetHeadcount>0&&r.actualHeadcount!=null)?r.actualHeadcount/r.targetHeadcount:null;r.staffRateAdj=(r.targetHeadcount>0&&r.actualHeadcount!=null&&r.lowHourHeadcount!=null)?Math.max(0,r.actualHeadcount-r.lowHourHeadcount)/r.targetHeadcount:null;return r}
 function mergeSeed(){for(const s of SEED.rows){let i=db.findIndex(x=>x.month===s.month&&x.center===s.center);if(i<0)db.push(calc({...s}));else{for(const [k,v] of Object.entries(s))if((db[i][k]==null||db[i][k]==='')&&v!=null)db[i][k]=v;calc(db[i])}}for(const s of SEED.totals){let i=totals.findIndex(x=>x.month===s.month);if(i<0)totals.push({...s});else for(const [k,v] of Object.entries(s))if((totals[i][k]==null||totals[i][k]==='')&&v!=null)totals[i][k]=v}db.sort((a,b)=>a.month.localeCompare(b.month)||CENTERS.indexOf(a.center)-CENTERS.indexOf(b.center));totals.sort((a,b)=>a.month.localeCompare(b.month));save(false)}
 function save(refresh=true){db.forEach(calc);localStorage.setItem('kfc_kpi_db',JSON.stringify(db));localStorage.setItem('kfc_kpi_totals',JSON.stringify(totals));localStorage.setItem('kfc_kpi_targets',JSON.stringify(targets));if(refresh)refreshAll()}
@@ -479,7 +480,7 @@ document.getElementById('saveEditBtn')?.addEventListener('click',async()=>{
     renderEditPanel();
   }catch(e){alert('修改失敗：'+e.message)}
 });
-if(!targets['2026'])targets['2026']={tplh:2,third:25,d25:80,dmsD25:80};save(false);refreshAll()}init();
+if(!targets['2026'])targets['2026']={tplh:2,third:25,d25:80,dmsD25:80};save(false);refreshAll()}try{init();}catch(e){console.error('KPI initialization failed (login remains available):',e);}
 
 
 async function loadSupabaseData(){
