@@ -35,7 +35,7 @@ textarea[readonly]{background:#f3f4f6;color:#555}
 
 <div class="field"><label>Email</label><input id="loginEmail" type="email"></div>
 <div class="field"><label>Password</label><input id="loginPassword" type="password"></div>
-<button id="loginBtn" class="btn primary">登入</button><button id="logoutBtn" class="btn">登出</button>
+<button id="loginBtn" class="btn primary">登入</button><div id="loginError" role="alert" style="display:none;grid-column:1/-1;color:#b91c1c;background:#fef2f2;padding:12px;border-radius:8px;white-space:normal"></div><button id="logoutBtn" class="btn">登出</button>
 </div></div></div>
 <div id="appShell" style="display:none"><div class="tabs"><button class="tab active" data-page="dashboard">KPI Dashboard</button>
 <button data-page="weeklylog">週誌</button>
@@ -544,15 +544,58 @@ function applyRoleUI(){
 // The anon key is allowed in a browser. Never place a service_role key in GitHub/HTML/JS.
 let sb=null,currentProfile=null;
 const DEFAULT_SB={url:'https://lkokyshixsnpgaymvacs.supabase.co',key:'sb_publishable_AI9TSuB34k2V-FhwR2Mp1A_2x7tVgSR'};
-const savedSb=Object.assign({},DEFAULT_SB,JSON.parse(localStorage.getItem('dekpi_supabase_config')||'{}'));
-if(savedSb.url)document.getElementById('sbUrl').value=savedSb.url;
-if(savedSb.key)document.getElementById('sbKey').value=savedSb.key;
-function initSb(){const url=document.getElementById('sbUrl').value.trim(),key=document.getElementById('sbKey').value.trim();if(!url||!key){document.getElementById('authStatus').textContent='未登入';return false}sb=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true}});return true}
-async function refreshAuth(){if(!sb&&!initSb())return;const {data:{session}}=await sb.auth.getSession();if(!session){currentProfile=null;document.getElementById('authStatus').textContent='未登入';applyRoleUI();return}const {data:p,error}=await sb.rpc('get_my_profile');if(error||!p||!p.length){currentProfile=null;document.getElementById('authStatus').textContent='登入成功，但無法讀取角色';applyRoleUI();return}currentProfile=p[0];applyRoleUI()}
-
-document.getElementById('loginBtn').onclick=async()=>{if(!sb&&!initSb())return alert('請先填 Supabase URL 與 anon key');const email=document.getElementById('loginEmail').value.trim(),password=document.getElementById('loginPassword').value;const {error}=await sb.auth.signInWithPassword({email,password});if(error)return alert('登入失敗：'+error.message);await refreshAuth();await loadSupabaseData();alert('登入成功')};
+// Always use the deployment's configured project; ignore stale browser overrides.
+try { localStorage.removeItem('dekpi_supabase_config'); } catch (_) {}
+document.getElementById('sbUrl').value=DEFAULT_SB.url;
+document.getElementById('sbKey').value=DEFAULT_SB.key;
+function showLoginError(message){
+  const el=document.getElementById('loginError');
+  if(el){el.textContent=message;el.style.display='block';}
+  document.getElementById('authStatus').textContent='登入失敗';
+}
+function initSb(){
+  const url=document.getElementById('sbUrl').value.trim(),key=document.getElementById('sbKey').value.trim();
+  if(!url||!key)throw new Error('Supabase 網址或金鑰未設定');
+  if(!window.supabase?.createClient)throw new Error('Supabase 程式庫載入失敗，請檢查網路或瀏覽器擴充功能');
+  sb=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true}});
+  return true;
+}
+async function refreshAuth(){
+  if(!sb)initSb();
+  const {data:{session},error:sessionError}=await sb.auth.getSession();
+  if(sessionError)throw sessionError;
+  if(!session){currentProfile=null;document.getElementById('authStatus').textContent='未登入';applyRoleUI();return}
+  const {data:p,error}=await sb.rpc('get_my_profile');
+  if(error||!p||!p.length){currentProfile=null;document.getElementById('authStatus').textContent='登入成功，但無法讀取角色';applyRoleUI();throw new Error('已通過帳密驗證，但無法讀取角色資料：'+(error?.message||'找不到使用者角色'))}
+  currentProfile=p[0];applyRoleUI();
+}
+function authErrorMessage(e){
+  const m=String(e?.message||e||'未知錯誤');
+  if(/failed to fetch|networkerror|load failed/i.test(m))return '無法連線 Supabase，請確認專案是否 Active、網址是否正確及網路是否正常。詳細資訊：'+m;
+  if(/invalid login credentials/i.test(m))return 'Email 或密碼不正確。';
+  return m;
+}
+document.getElementById('loginBtn').onclick=async()=>{
+  const btn=document.getElementById('loginBtn'),err=document.getElementById('loginError');
+  if(err){err.style.display='none';err.textContent='';}
+  const email=document.getElementById('loginEmail').value.trim(),password=document.getElementById('loginPassword').value;
+  if(!email||!password){showLoginError('請輸入 Email 與密碼');return;}
+  btn.disabled=true;btn.textContent='登入中…';
+  try{
+    if(!sb)initSb();
+    const result=await Promise.race([
+      sb.auth.signInWithPassword({email,password}),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error('連線逾時（20 秒），請檢查 Supabase 專案狀態')),20000))
+    ]);
+    if(result.error)throw result.error;
+    await refreshAuth();
+    if(!currentProfile)return;
+    try{await loadSupabaseData();}catch(dataError){console.error('KPI data load:',dataError);showLoginError('已登入，但 KPI 資料載入失敗：'+authErrorMessage(dataError));return;}
+  }catch(e){console.error('DEKPI login:',e);showLoginError('登入失敗：'+authErrorMessage(e));}
+  finally{btn.disabled=false;btn.textContent='登入';}
+};
 document.getElementById('logoutBtn').onclick=async()=>{if(sb)await sb.auth.signOut();currentProfile=null;document.getElementById('authStatus').textContent='未登入';applyRoleUI()};
-setTimeout(async()=>{initSb();await refreshAuth();if(currentProfile)await loadSupabaseData()},0);
+setTimeout(async()=>{try{initSb();await refreshAuth();if(currentProfile)await loadSupabaseData()}catch(e){console.error('DEKPI initialization:',e);showLoginError('初始化失敗：'+authErrorMessage(e))}},0);
 
 
 
