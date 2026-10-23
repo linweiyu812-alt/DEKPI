@@ -31,7 +31,7 @@ function render(type){
  let out='<div class="ki-list">';
  for(let i=0;i<3;i++){
   const p=plans[i]||{};
-  out+=`<div class="ki-item" data-slot="${i}"><h4>改善項目 ${i+1}</h4>`;
+  out+=`<div class="ki-item" data-slot="${i}"><h4>改善項目 ${i+1}${type==='week'&&p.kpi?`｜${esc(p.kpi)}`:''}</h4>`;
   if(type==='month'){
    out+=`<label>KPI<select data-p="kpi"><option value="">請選擇</option>${opts.map(k=>`<option ${k===p.kpi?'selected':''}>${esc(k)}</option>`).join('')}</select></label>`;
    out+=`<label>改善前基準<input data-p="baseline" value="${esc(p.baseline)}"></label><label>目標<input data-p="target" value="${esc(p.target)}"></label><label>負責人<input data-p="owner" value="${esc(p.owner)}"></label>`;
@@ -52,7 +52,13 @@ function render(type){
   out+='</div>';
  }
  out+='</div><div class="ki-actions"><button class="btn primary" data-ki-save="'+type+'">儲存三大 KPI '+(type==='week'?'追蹤進度':'計畫')+'</button></div><p class="hint">月報訂定四階段計畫；週報四階段可編輯：當月首週帶入月報，之後自動沿用同月前一週已儲存的內容；本週追蹤及行動每週獨立填寫。週報修改不會覆蓋月報或其他週次。</p>';
- el.innerHTML=out;if(type==='week'){loadReviews(plans);}
+ el.innerHTML=out;if(type==='week'){
+  el.querySelectorAll('[data-p="new_kpi"]').forEach(select=>select.addEventListener('change',()=>{
+    const slot=select.closest('[data-slot]');if(!slot)return;
+    const title=slot.querySelector('h4');if(title)title.textContent='改善項目 '+(Number(slot.dataset.slot)+1)+(select.value?'｜'+select.value:'');
+  }));
+  loadReviews(plans);
+ }
 }
 async function loadReviews(plans){
  const week=$('weeklyLogWeek').value, centerAtLoad=center('week'), monthAtLoad=sourceMonth('week');
