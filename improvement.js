@@ -18,7 +18,7 @@ const panel=type=>$(type==='week'?'wkImprovement':'mrImprovement');
 const html=`<div class="card kpi-improvement" id="wkImprovement"><div class="ki-head"><h3>三大 KPI 每週改善追蹤</h3><span class="hint" id="ki-week-status"></span></div><div id="ki-week-body"></div></div>`;
 $('wkFooter').insertAdjacentHTML('beforebegin',html);
 $('mrFooter').insertAdjacentHTML('beforebegin',`<div class="card kpi-improvement" id="mrImprovement"><div class="ki-head"><h3>下月三大 KPI 改善計畫</h3><span class="hint" id="ki-month-status"></span></div><div id="ki-month-body"></div></div>`);
-const style=document.createElement('style');style.textContent=`/* Compact weekly report without changing KPI formulas */#weeklylog .card{padding:12px 14px;margin-bottom:12px}#weeklylog .weekly-grid{font-size:11px}#weeklylog .weekly-grid th,#weeklylog .weekly-grid td{padding:3px 5px}#weeklylog .weekly-grid input{width:67px;min-width:58px;padding:3px}#weeklylog .toolbar{gap:7px}#weeklylog .wk-chart{height:260px}.kpi-improvement .ki-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.ki-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.ki-item{border:1px solid #cbd5e1;border-radius:7px;padding:10px;min-width:0}.ki-item h4{margin:0 0 7px;font-size:14px}.ki-item label{display:block;font-size:12px;margin:6px 0}.ki-item input,.ki-item select,.ki-item textarea{box-sizing:border-box;width:100%;font-size:12px;padding:6px;min-width:0}.ki-item textarea{resize:vertical;min-height:58px}.ki-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ki-item .hint{font-size:11px}.ki-mini{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin:8px 0}.ki-original{background:#f8fafc;padding:7px;border-radius:5px;margin:8px 0}.ki-original p{font-size:12px;line-height:1.6}.ki-new-findings{margin-top:9px}.ki-item details summary{cursor:pointer;font-size:12px;font-weight:600}.ki-result{border-left:3px solid #64748b;padding-left:10px;white-space:pre-wrap;margin:7px 0}.ki-archive{max-height:180px;overflow:auto}.ki-archive details{margin:4px 0}@media(max-width:850px){.ki-list{grid-template-columns:1fr}}`;document.head.append(style);
+const style=document.createElement('style');style.textContent=`/* Compact weekly report without changing KPI formulas */#weeklylog .card{padding:12px 14px;margin-bottom:12px}#weeklylog .weekly-grid{font-size:11px}#weeklylog .weekly-grid th,#weeklylog .weekly-grid td{padding:3px 5px}#weeklylog .weekly-grid input{width:67px;min-width:58px;padding:3px}#weeklylog .toolbar{gap:7px}#weeklylog .wk-chart{height:260px}.kpi-improvement .ki-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.ki-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.ki-item{border:1px solid #cbd5e1;border-radius:7px;padding:10px;min-width:0}.ki-item h4{margin:0 0 7px;font-size:14px}.ki-item label{display:block;font-size:12px;margin:6px 0}.ki-item input,.ki-item select,.ki-item textarea{box-sizing:border-box;width:100%;font-size:12px;padding:6px;min-width:0}.ki-item textarea{resize:vertical;min-height:58px}.ki-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ki-item .hint{font-size:11px}.ki-mini{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin:8px 0}.ki-original{background:#f8fafc;padding:7px;border-radius:5px;margin:8px 0}.ki-original p{font-size:12px;line-height:1.6}.ki-new-findings{margin-top:9px}.ki-item details summary{cursor:pointer;font-size:12px;font-weight:600}.ki-result{border-left:3px solid #64748b;padding-left:10px;white-space:pre-wrap;margin:7px 0}.ki-four-stage{display:block}.ki-stage{border-top:1px solid #cbd5e1;padding:5px 0}.ki-stage:first-of-type{margin-top:5px}.ki-stage p{margin:3px 0 0;white-space:pre-wrap}.ki-archive{max-height:180px;overflow:auto}.ki-archive details{margin:4px 0}@media(max-width:850px){.ki-list{grid-template-columns:1fr}}`;document.head.append(style);
 async function load(type){const n=++seq[type];if(!permitted())return;const c=center(type),m=sourceMonth(type);if(!c||!m)return;const {data,error}=await sb.from('kpi_improvement_plans').select('*').eq('center',c).eq('plan_month',m).order('created_at',{ascending:true});if(n!==seq[type])return;if(error){$(type==='week'?'ki-week-status':'ki-month-status').textContent='尚未啟用改善追蹤資料表：請先執行 improvement-update.sql';return;}records=data||[];loadedKey=key(type);render(type)}
 function planFor(type){const m=sourceMonth(type);return records.filter(x=>x.plan_month===m&&x.status!=='replaced').slice(0,3)}
 function render(type){
@@ -31,28 +31,24 @@ function render(type){
   out+=`<div class="ki-item" data-slot="${i}"><h4>改善項目 ${i+1}</h4>`;
   if(type==='month'){
    out+=`<label>KPI<select data-p="kpi"><option value="">請選擇</option>${opts.map(k=>`<option ${k===p.kpi?'selected':''}>${esc(k)}</option>`).join('')}</select></label>`;
-   out+=`<label>改善前基準<input data-p="baseline" value="${esc(p.baseline)}"></label><label>目標<input data-p="target" value="${esc(p.target)}"></label><label>負責人<input data-p="owner" value="${esc(p.owner)}"></label><label>完成期限<input data-p="deadline" type="date" value="${esc(p.deadline)}"></label>`;
+   out+=`<label>改善前基準<input data-p="baseline" value="${esc(p.baseline)}"></label><label>目標<input data-p="target" value="${esc(p.target)}"></label><label>負責人<input data-p="owner" value="${esc(p.owner)}"></label>`;
    out+='<div class="ki-plan-fields"><p class="hint">月報建立完整分析，供下月週報追蹤參考。</p>';
    for(let j=0;j<4;j++)out+=`<label>${labels[j]}<textarea data-p="${fields[j]}" placeholder="填寫月度${labels[j]}內容">${esc(p[fields[j]])}</textarea></label>`;
    out+='</div>'; 
   }else{
    out+=`<input type="hidden" data-p="kpi" value="${esc(p.kpi)}">`;
-   if(!p.kpi){out+=`<p class="hint">本月尚未設定時，可直接在本週補建本月 KPI 計畫。</p><label>選擇 KPI<select data-p="new_kpi"><option value="">請選擇</option>${opts.map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('')}</select></label><label>改善前基準<input data-p="baseline"></label><label>改善目標<input data-p="target"></label><label>負責人<input data-p="owner"></label><label>完成期限<input data-p="deadline" type="date"></label><details><summary>補建月度四段式計畫</summary>${fields.slice(0,4).map((f,j)=>`<label>${labels[j]}<textarea data-p="${f}"></textarea></label>`).join('')}</details>`;}
+   if(!p.kpi){out+=`<p class="hint">本月尚未設定時，可直接在本週補建本月 KPI 計畫。</p><label>選擇 KPI<select data-p="new_kpi"><option value="">請選擇</option>${opts.map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('')}</select></label><label>改善前基準<input data-p="baseline"></label><label>改善目標<input data-p="target"></label><label>負責人<input data-p="owner"></label><details><summary>補建月度四段式計畫</summary>${fields.slice(0,4).map((f,j)=>`<label>${labels[j]}<textarea data-p="${f}"></textarea></label>`).join('')}</details>`;}
    else{
     out+=`<div class="ki-mini"><span>基準：${esc(p.baseline)||'—'}</span><span>目標：${esc(p.target)||'—'}</span></div>`;
-    out+='<details class="ki-original"><summary>查看月報原訂四段式分析（唯讀）</summary>';
-    for(let j=0;j<4;j++)out+=`<p><strong>${labels[j]}</strong><br>${esc(p[fields[j]]||'尚未填寫').replace(/\n/g,'<br>')}</p>`;
-    out+='</details>';
-    out+=``;
-    out+='<label>本週執行情況與成果<textarea data-r="progress_note" placeholder="記錄本週執行的措施、實際成果及尚未完成事項；無新原因不必重寫四段式分析。"></textarea></label>';
-    out+='<details class="ki-new-findings"><summary>有新發現／新增證據／其他原因／行動調整時再補充（選填）</summary>';
-    for(let j=0;j<4;j++)out+=`<label>${labels[j]}（本週新增）<textarea data-r="${fields[j]}" placeholder="沒有變化可留空"></textarea></label>`;
-    out+='</details>';
+    out+='<div class="ki-original ki-four-stage"><strong>四階段分析（可依本週需要調整）</strong><p class="hint">預設帶入月報原訂內容；本週修改只儲存在該週，不會覆蓋月報計畫。</p>';
+    for(let j=0;j<4;j++)out+=`<label class="ki-stage"><strong>${labels[j]}</strong><textarea data-r="${fields[j]}" placeholder="${labels[j]}（有需要再修改）">${esc(p[fields[j]]||'')}</textarea></label>`;
+    out+='</div>';
+    out+='<label><strong>本週追蹤及行動</strong><textarea data-r="progress_note" placeholder="記錄本週執行進度、改善成果、新發現或調整行動；不需要重寫四階段分析。"></textarea></label>';
    }
   }
   out+='</div>';
  }
- out+='</div><div class="ki-actions"><button class="btn primary" data-ki-save="'+type+'">儲存三大 KPI '+(type==='week'?'追蹤進度':'計畫')+'</button></div><p class="hint">月報訂定四段式計畫；週報只需更新進度與成果，有新發現才補充。每週紀錄獨立保存，不覆蓋月報。</p>';
+ out+='</div><div class="ki-actions"><button class="btn primary" data-ki-save="'+type+'">儲存三大 KPI '+(type==='week'?'追蹤進度':'計畫')+'</button></div><p class="hint">月報訂定四階段計畫；週報四階段可編輯，預設帶入月報原訂內容；另填本週追蹤及行動。週報修改只保存在當週，不覆蓋月報。</p>';
  el.innerHTML=out;if(type==='week')loadReviews(plans);
 }
 async function loadReviews(plans){
@@ -60,7 +56,7 @@ async function loadReviews(plans){
  const {data,error}=await sb.from('kpi_improvement_reviews').select('*').eq('week',week).in('plan_id',ids);if(error)return;
  plans.forEach((p,i)=>{const r=(data||[]).find(x=>x.plan_id===p.id);if(!r)return;
   const slot=$('ki-week-body').querySelector(`[data-slot="${i}"]`);
-  [...fields,'progress_note'].forEach(f=>{const el=slot?.querySelector(`[data-r="${f}"]`);if(el)el.value=r[f]|| (f==='progress_status'?'in_progress':'')});
+  [...fields,'progress_note'].forEach(f=>{const el=slot?.querySelector(`[data-r="${f}"]`);if(el)el.value=(r[f]!==null&&r[f]!==undefined)?r[f]:el.value});
  });
 }
 async function save(type){
