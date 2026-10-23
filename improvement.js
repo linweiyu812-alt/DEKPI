@@ -3,7 +3,10 @@
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const opts=['D25','D7','TPLH','GES OSAT','GES SOS','SSSG','SSTG','Sales','第三方使用率','QT','080抱怨率','4128抱怨率','人力配置'];
 const fields=['finding','evidence','root_cause','action','outcome'];const labels=['Finding｜發現','Evidence｜證據','Root Cause｜根因','Action｜行動','執行成果'];
-let records=[],seq={week:0,month:0},loadedKey='';
+let recordsByType={week:[],month:[]},seq={week:0,month:0},loadedKey='';
+const draftKey=()=>`dekpi-kpi-week-draft|${center('week')}|${$('weeklyLogWeek')?.value}`;
+function saveDraft(){try{const slots=[...$('ki-week-body').querySelectorAll('[data-slot]')];localStorage.setItem(draftKey(),JSON.stringify(slots.map(s=>[...s.querySelectorAll('input,select,textarea')].map(e=>({p:e.dataset.p,r:e.dataset.r,value:e.value})))))}catch(e){console.warn('週報暫存失敗',e)}}
+function restoreDraft(){try{const d=JSON.parse(localStorage.getItem(draftKey())||'null');if(!d)return;[...$('ki-week-body').querySelectorAll('[data-slot]')].forEach((s,i)=>(d[i]||[]).forEach(x=>{const el=s.querySelector(x.p?`[data-p=\"${x.p}\"]`:`[data-r=\"${x.r}\"]`);if(el&&x.value!==undefined&&(x.r==='progress_note'||!el.value))el.value=x.value}))}catch(e){console.warn('週報暫存讀取失敗',e)}}
 const isOp=()=>['op','admin'].includes(String(currentProfile?.role||'').toLowerCase());
 const center=(type)=>isOp()?$(type==='week'?'weeklyLogCenter':'monthlyReportCenter')?.value:currentProfile?.center;
 const weekStart=w=>{if(!/^\d{4}-W\d{2}$/.test(w||''))return null;const [y,n]=w.split('-W').map(Number);const d=new Date(Date.UTC(y,0,4));d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7)+7*(n-1));return d};
@@ -19,8 +22,8 @@ const html=`<div class="card kpi-improvement" id="wkImprovement"><div class="ki-
 $('wkFooter').insertAdjacentHTML('beforebegin',html);
 $('mrFooter').insertAdjacentHTML('beforebegin',`<div class="card kpi-improvement" id="mrImprovement"><div class="ki-head"><h3>下月三大 KPI 改善計畫</h3><span class="hint" id="ki-month-status"></span></div><div id="ki-month-body"></div></div>`);
 const style=document.createElement('style');style.textContent=`/* Compact weekly report without changing KPI formulas */#weeklylog .card{padding:12px 14px;margin-bottom:12px}#weeklylog .weekly-grid{font-size:11px}#weeklylog .weekly-grid th,#weeklylog .weekly-grid td{padding:3px 5px}#weeklylog .weekly-grid input{width:67px;min-width:58px;padding:3px}#weeklylog .toolbar{gap:7px}#weeklylog .wk-chart{height:260px}.kpi-improvement .ki-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.ki-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.ki-item{border:1px solid #cbd5e1;border-radius:7px;padding:10px;min-width:0}.ki-item h4{margin:0 0 7px;font-size:14px}.ki-item label{display:block;font-size:12px;margin:6px 0}.ki-item input,.ki-item select,.ki-item textarea{box-sizing:border-box;width:100%;font-size:12px;padding:6px;min-width:0}.ki-item textarea{resize:vertical;min-height:58px}.ki-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ki-item .hint{font-size:11px}.ki-mini{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin:8px 0}.ki-original{background:#f8fafc;padding:7px;border-radius:5px;margin:8px 0}.ki-original p{font-size:12px;line-height:1.6}.ki-new-findings{margin-top:9px}.ki-item details summary{cursor:pointer;font-size:12px;font-weight:600}.ki-result{border-left:3px solid #64748b;padding-left:10px;white-space:pre-wrap;margin:7px 0}.ki-four-stage{display:block}.ki-stage{border-top:1px solid #cbd5e1;padding:5px 0}.ki-stage:first-of-type{margin-top:5px}.ki-stage p{margin:3px 0 0;white-space:pre-wrap}.ki-archive{max-height:180px;overflow:auto}.ki-archive details{margin:4px 0}@media(max-width:850px){.ki-list{grid-template-columns:1fr}}`;document.head.append(style);
-async function load(type){const n=++seq[type];if(!permitted())return;const c=center(type),m=sourceMonth(type);if(!c||!m)return;const {data,error}=await sb.from('kpi_improvement_plans').select('*').eq('center',c).eq('plan_month',m).order('created_at',{ascending:true});if(n!==seq[type])return;if(error){$(type==='week'?'ki-week-status':'ki-month-status').textContent='尚未啟用改善追蹤資料表：請先執行 improvement-update.sql';return;}records=data||[];loadedKey=key(type);render(type)}
-function planFor(type){const m=sourceMonth(type);return records.filter(x=>x.plan_month===m&&x.status!=='replaced').slice(0,3)}
+async function load(type){const n=++seq[type];if(!permitted())return;const c=center(type),m=sourceMonth(type);if(!c||!m)return;const {data,error}=await sb.from('kpi_improvement_plans').select('*').eq('center',c).eq('plan_month',m).order('created_at',{ascending:true});if(n!==seq[type])return;if(error){$(type==='week'?'ki-week-status':'ki-month-status').textContent='尚未啟用改善追蹤資料表：請先執行 improvement-update.sql';return;}recordsByType[type]=data||[];loadedKey=key(type);render(type)}
+function planFor(type){const m=sourceMonth(type);return recordsByType[type].filter(x=>x.plan_month===m&&x.status!=='replaced').slice(0,3)}
 function render(type){
  const el=$(type==='week'?'ki-week-body':'ki-month-body'),m=sourceMonth(type),c=center(type);
  if(!c||!m)return;const plans=planFor(type);
@@ -37,10 +40,10 @@ function render(type){
    out+='</div>'; 
   }else{
    out+=`<input type="hidden" data-p="kpi" value="${esc(p.kpi)}">`;
-   if(!p.kpi){out+=`<p class="hint">本月尚未設定時，可直接在本週補建本月 KPI 計畫。</p><label>選擇 KPI<select data-p="new_kpi"><option value="">請選擇</option>${opts.map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('')}</select></label><label>改善前基準<input data-p="baseline"></label><label>改善目標<input data-p="target"></label><label>負責人<input data-p="owner"></label><details><summary>補建月度四段式計畫</summary>${fields.slice(0,4).map((f,j)=>`<label>${labels[j]}<textarea data-p="${f}"></textarea></label>`).join('')}</details>`;}
+   if(!p.kpi){out+=`<p class="hint">本月尚未設定時，可直接在本週補建本月 KPI 計畫。</p><label>選擇 KPI<select data-p="new_kpi"><option value="">請選擇</option>${opts.map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('')}</select></label><label>改善前基準<input data-p="baseline"></label><label>改善目標<input data-p="target"></label><label>負責人<input data-p="owner"></label><details><summary>補建月度四段式計畫</summary>${fields.slice(0,4).map((f,j)=>`<label>${labels[j]}<textarea data-p="${f}"></textarea></label>`).join('')}</details><label><strong>本週追蹤及行動</strong><textarea data-r="progress_note" placeholder="記錄本週執行進度與成果"></textarea></label>`;}
    else{
     out+=`<div class="ki-mini"><span>基準：${esc(p.baseline)||'—'}</span><span>目標：${esc(p.target)||'—'}</span></div>`;
-    out+='<div class="ki-original ki-four-stage"><strong>四階段分析（可依本週需要調整）</strong><p class="hint">預設帶入月報原訂內容；本週修改只儲存在該週，不會覆蓋月報計畫。</p>';
+    out+='<div class="ki-original ki-four-stage"><strong>四階段分析（可依本週需要調整）</strong><p class="hint">當月首週帶入月報；後續週次沿用上週已儲存內容。本週修改不會覆蓋月報或前週。</p>';
     for(let j=0;j<4;j++)out+=`<label class="ki-stage"><strong>${labels[j]}</strong><textarea data-r="${fields[j]}" placeholder="${labels[j]}（有需要再修改）">${esc(p[fields[j]]||'')}</textarea></label>`;
     out+='</div>';
     out+='<label><strong>本週追蹤及行動</strong><textarea data-r="progress_note" placeholder="記錄本週執行進度、改善成果、新發現或調整行動；不需要重寫四階段分析。"></textarea></label>';
@@ -48,23 +51,41 @@ function render(type){
   }
   out+='</div>';
  }
- out+='</div><div class="ki-actions"><button class="btn primary" data-ki-save="'+type+'">儲存三大 KPI '+(type==='week'?'追蹤進度':'計畫')+'</button></div><p class="hint">月報訂定四階段計畫；週報四階段可編輯，預設帶入月報原訂內容；另填本週追蹤及行動。週報修改只保存在當週，不覆蓋月報。</p>';
- el.innerHTML=out;if(type==='week')loadReviews(plans);
+ out+='</div><div class="ki-actions"><button class="btn primary" data-ki-save="'+type+'">儲存三大 KPI '+(type==='week'?'追蹤進度':'計畫')+'</button></div><p class="hint">月報訂定四階段計畫；週報四階段可編輯：當月首週帶入月報，之後自動沿用同月前一週已儲存的內容；本週追蹤及行動每週獨立填寫。週報修改不會覆蓋月報或其他週次。</p>';
+ el.innerHTML=out;if(type==='week'){loadReviews(plans);}
 }
 async function loadReviews(plans){
- const week=$('weeklyLogWeek').value,ids=plans.map(x=>x.id).filter(Boolean);if(!ids.length)return;
- const {data,error}=await sb.from('kpi_improvement_reviews').select('*').eq('week',week).in('plan_id',ids);if(error)return;
- plans.forEach((p,i)=>{const r=(data||[]).find(x=>x.plan_id===p.id);if(!r)return;
-  const slot=$('ki-week-body').querySelector(`[data-slot="${i}"]`);
-  [...fields,'progress_note'].forEach(f=>{const el=slot?.querySelector(`[data-r="${f}"]`);if(el)el.value=(r[f]!==null&&r[f]!==undefined)?r[f]:el.value});
+ const week=$('weeklyLogWeek').value, centerAtLoad=center('week'), monthAtLoad=sourceMonth('week');
+ const ids=plans.map(x=>x.id).filter(Boolean);if(!ids.length)return;
+ const valid=()=>$('weeklyLogWeek').value===week&&center('week')===centerAtLoad&&sourceMonth('week')===monthAtLoad;
+ // Read all saved reviews within the same plan month. The latest earlier saved week
+ // is the starting point, unless this week already has its own saved version.
+ const {data,error}=await sb.from('kpi_improvement_reviews').select('*').in('plan_id',ids).order('week',{ascending:false});
+ if(error){console.error('載入 KPI 週追蹤失敗',error);return;}if(!valid())return;
+ const weekDate=weekStart(week);
+ plans.forEach((p,i)=>{
+  const slot=$('ki-week-body').querySelector(`[data-slot="${i}"]`);if(!slot||!p.id)return;
+  const entries=(data||[]).filter(r=>r.plan_id===p.id);
+  const current=entries.find(r=>r.week===week);
+  const previous=entries.find(r=>r.week<week&&weekStart(r.week)&&weekStart(r.week).toISOString().slice(0,7)===monthAtLoad);
+  const source=current||previous;
+  if(source){
+   fields.slice(0,4).forEach(f=>{const el=slot.querySelector(`[data-r="${f}"]`);if(el&&source[f]!==null&&source[f]!==undefined)el.value=source[f];});
+  }
+  // Weekly progress is NEVER copied from a previous week.
+  const progress=slot.querySelector('[data-r="progress_note"]');
+  if(progress)progress.value=current?(current.progress_note??current.outcome??''):'';
  });
+ // A draft from this same week takes precedence over inherited values.
+ restoreDraft();
 }
+
 async function save(type){
  if(!permitted())return alert('請先登入');
  const c=center(type),m=sourceMonth(type),existing=planFor(type),slots=[...$(type==='week'?'ki-week-body':'ki-month-body').querySelectorAll('[data-slot]')];
  const kpis=slots.map(s=>s.querySelector('[data-p="new_kpi"]')?.value||s.querySelector('[data-p="kpi"]')?.value).filter(Boolean);
  if(new Set(kpis).size!==kpis.length)return alert('三項 KPI 不可重複');
- if(type==='week'&&!kpis.length)return alert('請先在月報建立本月改善計畫，或直接在本週補建。');
+ if(type==='week'&&!kpis.length){saveDraft();return alert('已暫存本週填寫內容。請先在每個要追蹤的區塊選擇 KPI，再按儲存；也可以先到月報建立當月計畫。');}
  let done=0;
  for(let i=0;i<slots.length;i++){
   const slot=slots[i],k=slot.querySelector('[data-p="new_kpi"]')?.value||slot.querySelector('[data-p="kpi"]')?.value;if(!k)continue;
@@ -90,7 +111,7 @@ async function save(type){
     if(res.error)return alert('建立本月 KPI 失敗：'+res.error.message);id=res.data.id;
    }
    const review={plan_id:id,center:c,week:$('weeklyLogWeek').value,
-    ...Object.fromEntries(fields.slice(0,4).map(f=>[f,slot.querySelector(`[data-r="${f}"]`)?.value||''])),
+    ...Object.fromEntries(fields.slice(0,4).map(f=>[f,slot.querySelector(`[data-r="${f}"]`)?.value??get(f)])),
     progress_status:'in_progress',
     progress_note:slot.querySelector('[data-r="progress_note"]')?.value||''};
    review.outcome=review.progress_note;
@@ -99,11 +120,12 @@ async function save(type){
   }
   done++;
  }
+ if(type==='week'){try{localStorage.removeItem(draftKey())}catch(e){}}
  alert('已儲存 '+done+' 項改善'+(type==='week'?'追蹤':'計畫'));await load(type);
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ki-save]');if(b)save(b.dataset.kiSave)});
 for(const [type,ids] of [['week',['weeklyLogWeek','weeklyLogCenter']],['month',['monthlyReportMonth','monthlyReportCenter']]]){ids.forEach(id=>$(id)?.addEventListener('change',()=>load(type)));document.querySelector(`[data-page="${type==='week'?'weeklylog':'monthlyreport'}"]`)?.addEventListener('click',()=>setTimeout(()=>load(type),120))}
-window.addEventListener('dekpi-profile-changed',()=>{records=[];loadedKey='';setTimeout(()=>{load('week');load('month')},450)});
+window.addEventListener('dekpi-profile-changed',()=>{recordsByType={week:[],month:[]};loadedKey='';setTimeout(()=>{load('week');load('month')},450)});
 // The original Excel exporter is retained; one export button includes supplementary sheets.
 let exportAddon=null;
 const isCenterAllowed=c=>isOp()||c===currentProfile?.center;
