@@ -43,7 +43,7 @@ function render(type){
    if(!p.kpi){out+=`<p class="hint">本月尚未設定時，可直接在本週補建本月 KPI 計畫。</p><label>選擇 KPI<select data-p="new_kpi"><option value="">請選擇</option>${opts.map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('')}</select></label><label>改善前基準<input data-p="baseline"></label><label>改善目標<input data-p="target"></label><label>負責人<input data-p="owner"></label><details><summary>補建月度四段式計畫</summary>${fields.slice(0,4).map((f,j)=>`<label>${labels[j]}<textarea data-p="${f}"></textarea></label>`).join('')}</details><label><strong>本週追蹤及行動</strong><textarea data-r="progress_note" placeholder="記錄本週執行進度與成果"></textarea></label>`;}
    else{
     out+=`<div class="ki-mini"><span>基準：${esc(p.baseline)||'—'}</span><span>目標：${esc(p.target)||'—'}</span></div>`;
-    out+='<div class="ki-original ki-four-stage"><strong>四階段分析（可依本週需要調整）</strong><p class="hint">當月首週帶入月報；後續週次沿用上週已儲存內容。本週修改不會覆蓋月報或前週。</p>';
+    out+='<div class="ki-original ki-four-stage"><strong>四階段分析（可依本週需要調整）</strong><p class="hint">當月首週帶入月報；後續週次沿用最近已儲存週次內容。本週修改不會覆蓋月報或前週。</p><p class="hint ki-inherited-note">正在載入週報內容…</p>';
     for(let j=0;j<4;j++)out+=`<label class="ki-stage"><strong>${labels[j]}</strong><textarea data-r="${fields[j]}" placeholder="${labels[j]}（有需要再修改）">${esc(p[fields[j]]||'')}</textarea></label>`;
     out+='</div>';
     out+='<label><strong>本週追蹤及行動</strong><textarea data-r="progress_note" placeholder="記錄本週執行進度、改善成果、新發現或調整行動；不需要重寫四階段分析。"></textarea></label>';
@@ -61,17 +61,27 @@ async function loadReviews(plans){
  // Read all saved reviews within the same plan month. The latest earlier saved week
  // is the starting point, unless this week already has its own saved version.
  const {data,error}=await sb.from('kpi_improvement_reviews').select('*').in('plan_id',ids).order('week',{ascending:false});
- if(error){console.error('載入 KPI 週追蹤失敗',error);return;}if(!valid())return;
+ if(error){console.error('載入 KPI 週追蹤失敗',error);const status=$('ki-week-status');if(status)status.textContent='週追蹤讀取失敗：'+error.message;return;}if(!valid())return;
  const weekDate=weekStart(week);
  plans.forEach((p,i)=>{
   const slot=$('ki-week-body').querySelector(`[data-slot="${i}"]`);if(!slot||!p.id)return;
   const entries=(data||[]).filter(r=>r.plan_id===p.id);
   const current=entries.find(r=>r.week===week);
-  const previous=entries.find(r=>r.week<week&&weekStart(r.week)&&weekStart(r.week).toISOString().slice(0,7)===monthAtLoad);
-  const source=current||previous;
-  if(source){
-   fields.slice(0,4).forEach(f=>{const el=slot.querySelector(`[data-r="${f}"]`);if(el&&source[f]!==null&&source[f]!==undefined)el.value=source[f];});
-  }
+  const previous=entries.find(r=>r.week<week); // plan_id already confines records to the monthly KPI plan; ISO week Mondays can fall in the previous calendar month
+  // Old test saves may contain empty strings in one or all four stages.
+  // Resolve EACH field independently: this week -> most recent earlier nonblank -> monthly plan.
+  // Do not alter persisted records until the user explicitly saves this week.
+  let filledFromPrevious=false;
+  fields.slice(0,4).forEach(f=>{
+   const el=slot.querySelector(`[data-r="${f}"]`);if(!el)return;
+   const own=current?.[f];
+   if(typeof own==='string'&&own.trim()){el.value=own;return;}
+   const earlier=entries.find(r=>r.week<week&&typeof r[f]==='string'&&r[f].trim());
+   if(earlier){el.value=earlier[f];filledFromPrevious=true;return;}
+   el.value=p[f]??'';
+  });
+  const note=slot.querySelector('.ki-inherited-note');
+  if(note)note.textContent=current?(filledFromPrevious?'已保留本週內容，空白欄位自動補入前週資料':'已載入本週儲存內容'):(previous?`已沿用 ${previous.week} 四階段內容`:'已帶入月報原訂四階段內容');
   // Weekly progress is NEVER copied from a previous week.
   const progress=slot.querySelector('[data-r="progress_note"]');
   if(progress)progress.value=current?(current.progress_note??current.outcome??''):'';
