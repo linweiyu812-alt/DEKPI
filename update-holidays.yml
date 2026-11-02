@@ -1,0 +1,30 @@
+name: 更新政府行事曆
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 2 * * 1'
+permissions:
+  contents: write
+concurrency:
+  group: holiday-calendar-update
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 下載並檢查政府資料
+        run: python scripts/update_holiday_calendar.py
+      - name: 保存更新結果
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add holiday-data.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update holiday calendar data"
+            git push
+          fi
